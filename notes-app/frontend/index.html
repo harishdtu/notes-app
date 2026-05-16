@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noted.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <style>
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --surface2: #1f1f1f;
+      --border: #2a2a2a;
+      --accent: #c8f04a;
+      --accent-dim: rgba(200,240,74,0.12);
+      --text: #f0ede6;
+      --muted: #666;
+      --danger: #ff5c5c;
+      --shared: #5cb8ff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow: hidden;
+    }
+
+    /* ── CONFIG BANNER ── */
+    #config-banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 999;
+      background: var(--accent); color: #0e0e0e;
+      font-family: 'DM Mono', monospace; font-size: 13px;
+      padding: 10px 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    #config-banner input {
+      flex: 1; background: rgba(0,0,0,0.15); border: none; border-radius: 4px;
+      padding: 5px 10px; font-family: 'DM Mono', monospace; font-size: 13px;
+      color: #0e0e0e; outline: none;
+    }
+    #config-banner button {
+      background: #0e0e0e; color: var(--accent); border: none;
+      padding: 5px 14px; border-radius: 4px; cursor: pointer;
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+    }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      background: var(--bg);
+      padding-top: 44px;
+    }
+    .auth-card {
+      width: 380px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .auth-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 52px; font-weight: 700;
+      letter-spacing: -2px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .auth-logo span { color: var(--accent); }
+    .auth-tagline {
+      font-size: 13px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 40px;
+    }
+    .auth-tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+    .auth-tab {
+      padding: 10px 0; margin-right: 24px;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: all 0.2s;
+      font-family: 'DM Mono', monospace; letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block; font-size: 11px; color: var(--muted);
+      font-family: 'DM Mono', monospace; letter-spacing: 0.08em;
+      text-transform: uppercase; margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 12px 14px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .btn-primary {
+      width: 100%; background: var(--accent); color: #0e0e0e;
+      border: none; border-radius: 6px; padding: 13px;
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      cursor: pointer; margin-top: 8px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .auth-error {
+      margin-top: 12px; padding: 10px 12px;
+      background: rgba(255,92,92,0.1); border: 1px solid rgba(255,92,92,0.3);
+      border-radius: 6px; font-size: 13px; color: var(--danger);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── MAIN APP ── */
+    #app-screen {
+      display: none; position: fixed; inset: 0;
+      flex-direction: column; padding-top: 0;
+    }
+    #app-screen.visible { display: flex; }
+
+    /* Top bar */
+    .topbar {
+      height: 56px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 16px;
+      flex-shrink: 0;
+    }
+    .topbar-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 700; letter-spacing: -1px;
+    }
+    .topbar-logo span { color: var(--accent); }
+    .search-wrap {
+      flex: 1; max-width: 320px;
+      position: relative;
+    }
+    .search-wrap input {
+      width: 100%; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 8px 12px 8px 34px;
+      color: var(--text); font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border-color 0.2s;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap .icon {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%); color: var(--muted); font-size: 14px;
+    }
+    .topbar-user {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .user-email {
+      font-size: 12px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+    .btn-logout {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); padding: 6px 14px; border-radius: 5px;
+      font-size: 12px; cursor: pointer; font-family: 'DM Mono', monospace;
+      transition: all 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Main layout */
+    .main-layout {
+      flex: 1; display: flex; overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-head {
+      padding: 16px 16px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sidebar-title {
+      font-size: 11px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .btn-new {
+      background: var(--accent); color: #0e0e0e;
+      border: none; border-radius: 5px;
+      width: 26px; height: 26px; font-size: 18px; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.2s;
+    }
+    .btn-new:hover { opacity: 0.85; }
+    .notes-list {
+      flex: 1; overflow-y: auto; padding: 0 8px 16px;
+    }
+    .notes-list::-webkit-scrollbar { width: 4px; }
+    .notes-list::-webkit-scrollbar-track { background: transparent; }
+    .notes-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .note-item {
+      padding: 12px 10px; border-radius: 7px;
+      cursor: pointer; margin-bottom: 3px;
+      transition: background 0.15s;
+      position: relative;
+      border: 1px solid transparent;
+    }
+    .note-item:hover { background: var(--surface2); }
+    .note-item.active {
+      background: var(--accent-dim);
+      border-color: rgba(200,240,74,0.2);
+    }
+    .note-item-title {
+      font-size: 13px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .pin-icon { font-size: 10px; color: var(--accent); }
+    .shared-badge {
+      font-size: 9px; color: var(--shared);
+      font-family: 'DM Mono', monospace;
+      background: rgba(92,184,255,0.1);
+      border: 1px solid rgba(92,184,255,0.2);
+      padding: 1px 5px; border-radius: 3px;
+      margin-left: auto; flex-shrink: 0;
+    }
+    .note-item-meta {
+      font-size: 11px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 3px;
+    }
+    .note-item-preview {
+      font-size: 12px; color: var(--muted);
+      margin-top: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .empty-list {
+      text-align: center; padding: 40px 16px;
+      color: var(--muted); font-size: 13px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* Editor */
+    .editor-pane {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .editor-toolbar {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .editor-toolbar input.title-input {
+      flex: 1; background: none; border: none; outline: none;
+      font-family: 'Playfair Display', serif;
+      font-size: 22px; font-weight: 700; color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    .editor-toolbar input.title-input::placeholder { color: var(--muted); }
+    .btn-icon {
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); width: 32px; height: 32px;
+      border-radius: 6px; cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-icon.pinned { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .btn-icon.danger:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-save {
+      background: var(--accent); color: #0e0e0e;
+      border: none; border-radius: 6px;
+      padding: 7px 16px;
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      cursor: pointer; transition: opacity 0.2s; flex-shrink: 0;
+    }
+    .btn-save:hover { opacity: 0.85; }
+    .btn-save:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    textarea.content-input {
+      flex: 1; background: none; border: none; outline: none; resize: none;
+      padding: 24px;
+      color: var(--text); font-family: 'DM Sans', sans-serif;
+      font-size: 15px; line-height: 1.75; font-weight: 300;
+    }
+    textarea.content-input::placeholder { color: var(--muted); }
+
+    .editor-footer {
+      padding: 10px 24px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .editor-meta {
+      font-size: 11px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+    .share-wrap {
+      margin-left: auto; display: flex; gap: 8px; align-items: center;
+    }
+    .share-wrap input {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 5px; padding: 6px 10px;
+      color: var(--text); font-size: 12px; font-family: 'DM Mono', monospace;
+      outline: none; width: 200px; transition: border-color 0.2s;
+    }
+    .share-wrap input:focus { border-color: var(--accent); }
+    .btn-share {
+      background: none; border: 1px solid var(--shared);
+      color: var(--shared); border-radius: 5px;
+      padding: 6px 12px; font-size: 12px; cursor: pointer;
+      font-family: 'DM Mono', monospace; transition: all 0.2s;
+    }
+    .btn-share:hover { background: rgba(92,184,255,0.1); }
+
+    /* Empty state */
+    .empty-editor {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: var(--muted); gap: 12px;
+    }
+    .empty-editor-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 64px; font-style: italic;
+      color: var(--border); letter-spacing: -2px;
+    }
+    .empty-editor p { font-size: 13px; font-family: 'DM Mono', monospace; }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 18px;
+      font-size: 13px; font-family: 'DM Mono', monospace;
+      color: var(--text); z-index: 9999;
+      animation: toastIn 0.3s ease both;
+      max-width: 320px;
+    }
+    .toast.success { border-color: var(--accent); color: var(--accent); }
+    .toast.error { border-color: var(--danger); color: var(--danger); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Config Banner -->
+<div id="config-banner">
+  <span>🔗 API:</span>
+  <input id="api-url-input" type="text" placeholder="https://your-app.onrender.com" />
+  <button onclick="saveApiUrl()">Set</button>
+</div>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Noted<span>.</span></div>
+    <div class="auth-tagline">// your thoughts, organised</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Login</div>
+      <div class="auth-tab" onclick="switchTab('register')">Register</div>
+    </div>
+
+    <div class="field">
+      <label>Email</label>
+      <input id="auth-email" type="email" placeholder="you@example.com" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="auth-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')submitAuth()" />
+    </div>
+    <button class="btn-primary" id="auth-btn" onclick="submitAuth()">Login</button>
+    <div id="auth-error" class="auth-error" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-logo">Noted<span>.</span></div>
+    <div class="search-wrap">
+      <span class="icon">⌕</span>
+      <input id="search-input" type="text" placeholder="Search notes..." oninput="debounceSearch()" />
+    </div>
+    <div class="topbar-user">
+      <span class="user-email" id="user-email-display"></span>
+      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main-layout">
+    <div class="sidebar">
+      <div class="sidebar-head">
+        <span class="sidebar-title">Notes</span>
+        <button class="btn-new" onclick="newNote()" title="New note">+</button>
+      </div>
+      <div class="notes-list" id="notes-list"></div>
+    </div>
+
+    <div class="editor-pane" id="editor-pane">
+      <div class="empty-editor" id="empty-editor">
+        <div class="empty-editor-logo">N.</div>
+        <p>Select a note or create a new one</p>
+      </div>
+
+      <div id="editor" style="display:none; flex:1; flex-direction:column; overflow:hidden; display:none;">
+        <div class="editor-toolbar">
+          <input class="title-input" id="note-title" type="text" placeholder="Untitled" />
+          <button class="btn-icon" id="pin-btn" onclick="togglePin()" title="Pin note">📌</button>
+          <button class="btn-icon danger" onclick="deleteNote()" title="Delete note">🗑</button>
+          <button class="btn-save" onclick="saveNote()">Save</button>
+        </div>
+        <textarea class="content-input" id="note-content" placeholder="Start writing…"></textarea>
+        <div class="editor-footer">
+          <span class="editor-meta" id="editor-meta"></span>
+          <div class="share-wrap">
+            <input id="share-email" type="email" placeholder="Share with email…" />
+            <button class="btn-share" onclick="shareNote()">Share →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── STATE ──────────────────────────────────────────────────────────────────
+  let API = localStorage.getItem('notes_api_url') || '';
+  let TOKEN = localStorage.getItem('notes_token') || '';
+  let USER_EMAIL = localStorage.getItem('notes_email') || '';
+  let notes = [];
+  let activeNoteId = null;
+  let isNew = false;
+  let searchTimer = null;
+
+  // ── INIT ──────────────────────────────────────────────────────────────────
+  window.onload = () => {
+    if (API) document.getElementById('api-url-input').value = API;
+    if (TOKEN) showApp();
+  };
+
+  function saveApiUrl() {
+    const val = document.getElementById('api-url-input').value.trim().replace(/\/$/, '');
+    if (!val) return;
+    API = val;
+    localStorage.setItem('notes_api_url', val);
+    toast('API URL saved', 'success');
+  }
+
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  let currentTab = 'login';
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('auth-btn').textContent = tab === 'login' ? 'Login' : 'Register';
+    document.getElementById('auth-error').style.display = 'none';
+  }
+
+  async function submitAuth() {
+    if (!API) { showAuthError('Set your API URL first (yellow banner above)'); return; }
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) { showAuthError('Enter email and password'); return; }
+
+    const btn = document.getElementById('auth-btn');
+    btn.disabled = true;
+
+    try {
+      if (currentTab === 'register') {
+        const r = await api('/register', 'POST', { email, password });
+        toast('Registered! Logging in…', 'success');
+        // auto-login after register
+        await doLogin(email, password);
+      } else {
+        await doLogin(email, password);
+      }
+    } catch (e) {
+      showAuthError(e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function doLogin(email, password) {
+    const data = await api('/login', 'POST', { email, password });
+    TOKEN = data.access_token;
+    USER_EMAIL = email;
+    localStorage.setItem('notes_token', TOKEN);
+    localStorage.setItem('notes_email', email);
+    showApp();
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function logout() {
+    TOKEN = ''; USER_EMAIL = '';
+    localStorage.removeItem('notes_token');
+    localStorage.removeItem('notes_email');
+    notes = []; activeNoteId = null;
+    document.getElementById('app-screen').classList.remove('visible');
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-error').style.display = 'none';
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-screen').classList.add('visible');
+    document.getElementById('user-email-display').textContent = USER_EMAIL;
+    loadNotes();
+  }
+
+  // ── NOTES LIST ────────────────────────────────────────────────────────────
+  async function loadNotes(query = '') {
+    try {
+      const endpoint = query ? `/search?q=${encodeURIComponent(query)}` : '/notes?per_page=100';
+      notes = await api(endpoint);
+      renderList();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  function renderList() {
+    const el = document.getElementById('notes-list');
+    if (!notes.length) {
+      el.innerHTML = '<div class="empty-list">No notes yet.<br/>Hit + to create one.</div>';
+      return;
+    }
+    el.innerHTML = notes.map(n => `
+      <div class="note-item ${n.id === activeNoteId ? 'active' : ''}" onclick="openNote('${n.id}')">
+        <div class="note-item-title">
+          ${n.is_pinned ? '<span class="pin-icon">📌</span>' : ''}
+          <span style="overflow:hidden;text-overflow:ellipsis">${esc(n.title || 'Untitled')}</span>
+          ${n.owner_id !== undefined ? '' : '<span class="shared-badge">shared</span>'}
+        </div>
+        <div class="note-item-meta">${fmtDate(n.updated_at)}</div>
+        <div class="note-item-preview">${esc(n.content?.slice(0, 60) || '')}</div>
+      </div>
+    `).join('');
+  }
+
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    const q = document.getElementById('search-input').value.trim();
+    searchTimer = setTimeout(() => loadNotes(q), 300);
+  }
+
+  // ── EDITOR ────────────────────────────────────────────────────────────────
+  function openNote(id) {
+    activeNoteId = id;
+    isNew = false;
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+
+    document.getElementById('note-title').value = note.title || '';
+    document.getElementById('note-content').value = note.content || '';
+    document.getElementById('share-email').value = '';
+    document.getElementById('editor-meta').textContent =
+      `Updated ${fmtDate(note.updated_at)}`;
+
+    const pinBtn = document.getElementById('pin-btn');
+    pinBtn.classList.toggle('pinned', note.is_pinned);
+    pinBtn.title = note.is_pinned ? 'Unpin note' : 'Pin note';
+
+    showEditor();
+    renderList();
+  }
+
+  function newNote() {
+    activeNoteId = null;
+    isNew = true;
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-content').value = '';
+    document.getElementById('share-email').value = '';
+    document.getElementById('editor-meta').textContent = 'New note';
+    document.getElementById('pin-btn').classList.remove('pinned');
+    showEditor();
+    document.getElementById('note-title').focus();
+    renderList();
+  }
+
+  function showEditor() {
+    document.getElementById('empty-editor').style.display = 'none';
+    const ed = document.getElementById('editor');
+    ed.style.display = 'flex';
+    ed.style.flexDirection = 'column';
+    ed.style.flex = '1';
+    ed.style.overflow = 'hidden';
+  }
+
+  async function saveNote() {
+    const title = document.getElementById('note-title').value.trim();
+    const content = document.getElementById('note-content').value;
+    if (!title) { toast('Title cannot be empty', 'error'); return; }
+
+    try {
+      if (isNew) {
+        const n = await api('/notes', 'POST', { title, content });
+        toast('Note created', 'success');
+        isNew = false;
+        activeNoteId = n.id;
+      } else {
+        await api(`/notes/${activeNoteId}`, 'PUT', { title, content });
+        toast('Saved', 'success');
+      }
+      await loadNotes(document.getElementById('search-input').value.trim());
+      openNote(activeNoteId);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  async function deleteNote() {
+    if (!activeNoteId) return;
+    if (!confirm('Delete this note?')) return;
+    try {
+      await api(`/notes/${activeNoteId}`, 'DELETE');
+      activeNoteId = null;
+      isNew = false;
+      document.getElementById('editor').style.display = 'none';
+      document.getElementById('empty-editor').style.display = 'flex';
+      toast('Note deleted', 'success');
+      await loadNotes();
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  async function togglePin() {
+    if (!activeNoteId || isNew) return;
+    try {
+      const n = await api(`/notes/${activeNoteId}/pin`, 'PATCH');
+      toast(n.is_pinned ? 'Pinned ✓' : 'Unpinned', 'success');
+      await loadNotes(document.getElementById('search-input').value.trim());
+      openNote(activeNoteId);
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  async function shareNote() {
+    if (!activeNoteId || isNew) { toast('Save note first', 'error'); return; }
+    const email = document.getElementById('share-email').value.trim();
+    if (!email) { toast('Enter an email to share with', 'error'); return; }
+    try {
+      const r = await api(`/notes/${activeNoteId}/share`, 'POST', { share_with_email: email });
+      toast(r.message, 'success');
+      document.getElementById('share-email').value = '';
+    } catch (e) {
+      toast(e.message, 'error');
+    }
+  }
+
+  // ── API HELPER ────────────────────────────────────────────────────────────
+  async function api(path, method = 'GET', body = null) {
+    if (!API) throw new Error('API URL not set. Use the banner above.');
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (TOKEN) opts.headers['Authorization'] = `Bearer ${TOKEN}`;
+    if (body) opts.body = JSON.stringify(body);
+
+    const res = await fetch(API + path, opts);
+
+    if (res.status === 204) return null;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      let message = `Error ${res.status}`;
+      if (data.detail) {
+        if (Array.isArray(data.detail)) {
+          message = data.detail
+            .map(err => err?.msg || err?.detail || JSON.stringify(err))
+            .join(' | ');
+        } else if (typeof data.detail === 'string') {
+          message = data.detail;
+        } else {
+          message = JSON.stringify(data.detail);
+        }
+      } else if (data.error) {
+        message = data.error;
+      }
+      throw new Error(message);
+    }
+    return data;
+  }
+
+  // ── UTILS ─────────────────────────────────────────────────────────────────
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = (now - d) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+    return d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  }
+
+  let toastTimer;
+  function toast(msg, type = '') {
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+    clearTimeout(toastTimer);
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    toastTimer = setTimeout(() => el.remove(), 3000);
+  }
+</script>
+</body>
+</html>
